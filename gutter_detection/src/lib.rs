@@ -1,4 +1,6 @@
-use image::{ImageReader,RgbImage, Rgb};
+pub mod border_average;
+
+use image::{ImageReader, RgbImage, Rgb};
 
 pub fn average(file_name: &str) {
     let img = ImageReader::open(file_name)
