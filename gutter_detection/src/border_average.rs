@@ -1,52 +1,63 @@
 //! Add a docstring here in future
 
-fn num_pixel_border(width: u32, height: u32, thickness: u32) -> u32 {
-    if 2 * thickness >= width.min(height) {
-        return width * height;
-    }
+use image::RgbImage;
 
-    2 * thickness * (width + height - 2 * thickness)
+pub(crate) fn calculate_average(img: RgbImage) -> [u8;3] {
+    let (r_counts, g_counts, b_counts) = border_arr(img);
+
+    let r_total: u64 = r_counts
+        .iter()
+        .map(|&c| c as u64)
+        .sum();
+
+    let r_weighted_sum: u64 = r_counts
+        .iter()
+        .enumerate()
+        .map(|(v, &c)| v as u64 * c as u64)
+        .sum();
+    let r_mean = (r_weighted_sum / r_total) as u8;
+
+    let g_total: u64 = g_counts
+        .iter()
+        .map(|&c| c as u64)
+        .sum();
+
+    let g_weighted_sum: u64 = g_counts
+        .iter()
+        .enumerate()
+        .map(|(v, &c)| v as u64 * c as u64)
+        .sum();
+    let g_mean = (g_weighted_sum / g_total) as u8;
+
+    let b_total: u64 = b_counts
+        .iter()
+        .map(|&c| c as u64)
+        .sum();
+
+    let b_weighted_sum: u64 = b_counts
+        .iter()
+        .enumerate()
+        .map(|(v, &c)| v as u64 * c as u64)
+        .sum();
+    let b_mean = (b_weighted_sum / b_total) as u8;
+
+    [r_mean, g_mean, b_mean]
 }
 
-#[cfg(test)]
-mod num_pixel_border_tests {
-    use super::*;
+fn border_arr(img: RgbImage) -> ([u32;256],[u32;256],[u32;256]) {
+    let mut r_counts = [0u32; 256];
+    let mut g_counts = [0u32; 256];
+    let mut b_counts = [0u32; 256];
 
-    #[test]
-    fn single_pixel_ring() {
-        // thickness = 1 on a 10x10 image: standard ring perimeter, 2*10+2*10-4
-        assert_eq!(num_pixel_border(10, 10, 1), 36);
+    for (x, y, pixel) in img.enumerate_pixels() {
+        let r = pixel.0[0];
+        let g = pixel.0[1];
+        let b = pixel.0[2];
+
+        r_counts[r as usize] += 1;
+        g_counts[g as usize] += 1;
+        b_counts[b as usize] += 1;
     }
 
-    #[test]
-    fn two_pixel_ring() {
-        // outer ring (36) + next ring in, a 8x8 ring (28)
-        assert_eq!(num_pixel_border(10, 10, 2), 64);
-    }
-
-    #[test]
-    fn non_square_image() {
-        assert_eq!(num_pixel_border(20, 10, 3), 144);
-    }
-
-    #[test]
-    fn thickness_covers_whole_image_exactly() {
-        // 2*thickness == min(width, height): whole image is border
-        assert_eq!(num_pixel_border(10, 10, 5), 100);
-    }
-
-    #[test]
-    fn thickness_exceeds_image_size() {
-        assert_eq!(num_pixel_border(5, 5, 10), 25);
-    }
-
-    #[test]
-    fn zero_thickness_is_zero_border() {
-        assert_eq!(num_pixel_border(10, 10, 0), 0);
-    }
-
-    #[test]
-    fn zero_sized_image() {
-        assert_eq!(num_pixel_border(0, 10, 3), 0);
-    }
+    return (r_counts, g_counts, b_counts)
 }
