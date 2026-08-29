@@ -437,6 +437,7 @@ dependencies = [
 name = "gutter_detection"
 version = "0.1.0"
 dependencies = [
+ "clap",
  "image",
 ]
 
