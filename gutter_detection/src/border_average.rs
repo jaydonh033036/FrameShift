@@ -14,6 +14,7 @@ pub enum AverageType {
     Mode,
 }
 
+
 impl std::fmt::Display for AverageType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -24,8 +25,13 @@ impl std::fmt::Display for AverageType {
     }
 }
 
-pub(crate) fn calculate_average(img: RgbImage, avg_type: AverageType) -> [u8;3] {
-    let (r_counts, g_counts, b_counts) = border_arr(img);
+
+pub(crate) fn calculate_average(img: RgbImage, avg_type: AverageType, border_width: u8) -> [u8;3] {
+    let (
+        r_counts,
+        g_counts,
+        b_counts
+    ) = border_arr(img, border_width as u32);
 
     match avg_type {
         AverageType::Mean => [
@@ -46,23 +52,27 @@ pub(crate) fn calculate_average(img: RgbImage, avg_type: AverageType) -> [u8;3] 
     }
 }
 
-fn border_arr(img: RgbImage) -> ([u32;256],[u32;256],[u32;256]) {
+
+fn border_arr(img: RgbImage, w: u32) -> ([u32;256],[u32;256],[u32;256]) {
     let mut r_counts = [0u32; 256];
     let mut g_counts = [0u32; 256];
     let mut b_counts = [0u32; 256];
 
+    let (width, height) = img.dimensions();
     for (x, y, pixel) in img.enumerate_pixels() {
-        let r = pixel.0[0];
-        let g = pixel.0[1];
-        let b = pixel.0[2];
+        if x < w || x >= (width - w) || y < w || y >= (height - w) {
+            let r = pixel.0[0];
+            let g = pixel.0[1];
+            let b = pixel.0[2];
 
-        r_counts[r as usize] += 1;
-        g_counts[g as usize] += 1;
-        b_counts[b as usize] += 1;
+            r_counts[r as usize] += 1;
+            g_counts[g as usize] += 1;
+            b_counts[b as usize] += 1;
+        }
     }
-
     return (r_counts, g_counts, b_counts)
 }
+
 
 fn mean_from_counts(counts: &[u32;256]) -> u8 {
     let total: u64 = counts
@@ -79,6 +89,7 @@ fn mean_from_counts(counts: &[u32;256]) -> u8 {
     (weighted_sum / total) as u8
 }
 
+
 fn mode_from_counts(counts: &[u32; 256]) -> u8 {
     counts
         .iter()
@@ -87,6 +98,7 @@ fn mode_from_counts(counts: &[u32; 256]) -> u8 {
         .map(|(v, _)| v as u8)
         .unwrap()
 }
+
 
 fn median_from_counts(counts: &[u32]) -> u8 {
     let total: u32 = counts.iter().sum();
