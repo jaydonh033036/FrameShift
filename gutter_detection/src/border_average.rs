@@ -2,6 +2,8 @@
 
 use image::RgbImage;
 use clap::ValueEnum;
+use indicatif::{ProgressBar, ProgressStyle};
+use crate::Verbosity;
 
 /// Statistical method used to summarize border pixel colours.
 #[derive(Clone, Copy, ValueEnum)]
@@ -26,12 +28,18 @@ impl std::fmt::Display for AverageType {
 }
 
 
-pub(crate) fn calculate_average(img: RgbImage, avg_type: AverageType, border_width: u8) -> [u8;3] {
+pub(crate) fn calculate_average(
+    img: RgbImage,
+    avg_type: AverageType,
+    border_width: u8,
+    verbosity: Verbosity,
+    label: &str,
+) -> [u8;3] {
     let (
         r_counts,
         g_counts,
         b_counts
-    ) = border_arr(img, border_width as u32);
+    ) = border_arr(img, border_width as u32, verbosity, label);
 
     match avg_type {
         AverageType::Mean => [
@@ -53,23 +61,54 @@ pub(crate) fn calculate_average(img: RgbImage, avg_type: AverageType, border_wid
 }
 
 
-fn border_arr(img: RgbImage, w: u32) -> ([u32;256],[u32;256],[u32;256]) {
+fn border_arr(
+    img: RgbImage,
+    w: u32,
+    verbosity: Verbosity,
+    label: &str
+) -> ([u32;256],[u32;256],[u32;256]) {
     let mut r_counts = [0u32; 256];
     let mut g_counts = [0u32; 256];
     let mut b_counts = [0u32; 256];
 
     let (width, height) = img.dimensions();
-    for (x, y, pixel) in img.enumerate_pixels() {
-        if x < w || x >= (width - w) || y < w || y >= (height - w) {
-            let r = pixel.0[0];
-            let g = pixel.0[1];
-            let b = pixel.0[2];
 
+    // -v: one progress bar per image, ticked once per pixel visited (border or not).
+    let progress = if verbosity == Verbosity::Verbose {
+        let pb = ProgressBar::new((width as u64) * (height as u64));
+        pb.set_style(
+            ProgressStyle::with_template("{msg} [{bar:40}] {pos}/{len}")
+                .unwrap()
+                .progress_chars("=>-"),
+        );
+        pb.set_message(label.to_string());
+        Some(pb)
+    } else {
+        None
+    };
+
+    for (x, y, pixel) in img.enumerate_pixels() {
+        if let Some(pb) = &progress {
+            pb.inc(1);
+        }
+
+        let is_border = x < w || x >= (width - w) || y < w || y >= (height - w);
+
+        let r = pixel.0[0];
+        let g = pixel.0[1];
+        let b = pixel.0[2];
+
+        if is_border {
             r_counts[r as usize] += 1;
             g_counts[g as usize] += 1;
             b_counts[b as usize] += 1;
         }
     }
+
+    if let Some(pb) = progress {
+        pb.finish_and_clear();
+    }
+
     return (r_counts, g_counts, b_counts)
 }
 
