@@ -1,6 +1,5 @@
 use clap::Parser;
 use gutter_detection::average;
-use gutter_detection::border_average::AverageType;
 use gutter_detection::Verbosity;
 
 #[derive(Parser)]
@@ -14,10 +13,6 @@ struct Args {
     /// is saved) or provide exactly one output path per input file.
     #[arg(short = 'o', long = "output", num_args = 0..)]
     output: Vec<String>,
-
-    /// Averaging method to use for border colour
-    #[arg(short = 't', long = "avg-type", default_value_t = AverageType::Median, value_enum)]
-    avg_type: AverageType,
 
     /// The width of the border to be considered
     #[arg(short = 'w', long = "border-width", default_value_t = 2)]
@@ -55,6 +50,6 @@ fn main() {
 
     for (idx, file) in args.input.iter().enumerate() {
         let output_file = args.output.get(idx).map(|s| s.as_str());
-        average(file, output_file, args.avg_type, args.border_width, verbosity);
+        average(file, output_file, args.border_width, verbosity);
     }
 }

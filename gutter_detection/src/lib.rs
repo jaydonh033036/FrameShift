@@ -1,7 +1,7 @@
 pub mod border_average;
 
 use image::{ImageReader, ImageBuffer, Rgb};
-use crate::border_average::{calculate_average, AverageType};
+use crate::border_average::{calculate_average};
 
 /// Controls how much a single image's processing prints to stdout.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -17,7 +17,6 @@ pub enum Verbosity {
 pub fn average(
     input_file: &str,
     output_file: Option<&str>,
-    avg_type: AverageType,
     border_width: u8,
     verbosity: Verbosity,
 ) {
@@ -29,8 +28,7 @@ pub fn average(
 
     let (width, height) = img.dimensions();
     let average_color = calculate_average(
-        img, 
-        avg_type, 
+        img,
         border_width, 
         verbosity, 
         input_file
